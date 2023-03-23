@@ -15,7 +15,7 @@ MODULE_VERSION("1.0");
 #define VAR "var5"
 #define DRIVER_NAME VAR
 #define DRIVER_CLASS "IO_class"
-#define READ_BUF_SIZE 15
+#define READ_BUF_SIZE 1 << 12
 
 static dev_t my_device;
 static struct class *my_class;
@@ -23,36 +23,48 @@ static struct cdev my_device_struct;
 static struct proc_dir_entry* proc_entry;
 
 
-int total_read_letters = 0;
+static char history[1024*16] = {0};
+static size_t history_size = 0;
 
-static ssize_t p_read(struct file *file, char __user * ubuf, size_t count, loff_t* ppos) {
-	return -1;
+static bool is_letter(char c) {
+	return (('A' <= c) && (c <= 'Z')) || (('a' <= c) && (c <= 'z'));
 }
-
-/*static ssize_t p_write(struct file *file, const char __user * ubuf, size_t count, loff_t* ppos) {
-	return -1;
-}*/
 
 static ssize_t dev_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos) {
 	static char my_buf[READ_BUF_SIZE];
 	size_t read_next = count < READ_BUF_SIZE ? count : READ_BUF_SIZE;
 	if (copy_from_user(my_buf, ubuf, read_next) != 0) {
 		return -EFAULT;
-	}	
-	for (int i = 0; i < read_next; i++) {
-		total_read_letters += (('A' <= my_buf[i]) && (my_buf[i] <= 'Z')) || (('a' <= my_buf[i]) && (my_buf[i] <= 'z')) ? 1 : 0;
 	}
+	int i;
+	int size = 0;
+	for (i = 0; i < read_next; i++) {
+		size += (is_letter(my_buf[i])) ? 1 : 0;
+	}
+	history_size += sprintf(history + history_size, "%d\n", size);
 	*ppos += read_next;
 	return read_next;
 }
 
+static ssize_t proc_read(struct file *file, char __user *ubuf, size_t count, loff_t* ppos) {
+	if (*ppos > 0 || count < history_size) {
+	    	return 0;
+	}
+	if (copy_to_user(ubuf, history, history_size) != 0) {
+		return -EFAULT;
+	}
+	*ppos = count;
+	return history_size;
+}
+
+
 static ssize_t dev_read(struct file *file, char __user *ubuf, size_t count, loff_t* ppos) {
-	return -1;
+	printk("%s", history);
+	return 0;
 }
 
 static struct proc_ops proc_fops = {
-	.proc_read = p_read,
-//	.proc_write = p_write
+	.proc_read = proc_read,
 };
 
 static struct file_operations dev_fops = {
@@ -66,7 +78,7 @@ static int __init io_init(void) {
                 printk("Device could not be allocated\n");
                 return -1;
         }
-        printk("my_driver device number was registered, Major:%d, Minor:%d\n", my_device >> 20, my_device & 0xffff);
+        printk("my_driver device number was registered, Major: %d, Minor: %d\n", MAJOR(my_device), MINOR(my_device));
 
         /* Create device class */
         if ((my_class = class_create(THIS_MODULE, DRIVER_CLASS)) == NULL) {
