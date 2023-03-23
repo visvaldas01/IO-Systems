@@ -76,6 +76,7 @@ cat /dev/var5
 [  307.775045] my_driver device number was registered, Major: 236, Minor: 0
 [  307.776001] 
                Device successfully registered! Device name: var5
-[  357.759703] 0
+[  357.759703] 4
                5
+               0
 ```
