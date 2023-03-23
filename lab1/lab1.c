@@ -54,6 +54,7 @@ static ssize_t proc_read(struct file *file, char __user *ubuf, size_t count, lof
 		return -EFAULT;
 	}
 	*ppos = count;
+	printk("%s\n", history);
 	return history_size;
 }
 
@@ -64,7 +65,7 @@ static ssize_t dev_read(struct file *file, char __user *ubuf, size_t count, loff
 }
 
 static struct proc_ops proc_fops = {
-	.proc_read = proc_read,
+	.proc_read = proc_read
 };
 
 static struct file_operations dev_fops = {
