@@ -26,15 +26,25 @@ make clean
 ## Changelog
 
 ```diff main.c main5.c```
+
 331,334c331,332
+
 <   //device.gd = alloc_disk(7); // gendisk allocation
+
 <   //device.gd = blk_mq_alloc_disk_node(&(device.tag_set), &device);
+
 <   //device.gd = blk_alloc_disk(7);
+
 <   device.gd = __alloc_disk_node(device.queue, 7, &sr_bio_compl_lkclass);
----
->   device.gd = alloc_disk(7); // gendisk allocation
-> 
+
+\---
+
+\>   device.gd = alloc_disk(7); // gendisk allocation
+
+\> 
+
 341d338
+
 <   device.gd->minors = 1;
 
 ## Ход мыслей
