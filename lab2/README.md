@@ -25,7 +25,8 @@ make clean
 
 ## Changelog
 
-```diff main.c main5.c```
+```
+diff main.c main5.c
 
 331,334c331,332
 
@@ -46,6 +47,7 @@ make clean
 341d338
 
 <   device.gd->minors = 1;
+```
 
 ## Ход мыслей
 
