@@ -9,7 +9,7 @@
 #include <linux/udp.h>
 #include <linux/proc_fs.h>
 
-static char* link = "enp0s3";
+static char* link = "lo";
 module_param(link, charp, 0);
 
 static char* ifname = "vni%d";
@@ -25,32 +25,34 @@ struct priv {
 };
 
 static char check_frame(struct sk_buff *skb, unsigned char data_shift) {
-	unsigned char *user_data_ptr = NULL;
+    unsigned char *user_data_ptr = NULL;
     struct iphdr *ip = (struct iphdr *)skb_network_header(skb);
     struct udphdr *udp = NULL;
     int data_len = 0;
 
-	if (IPPROTO_UDP == ip->protocol) {
+    if (IPPROTO_UDP == ip->protocol) {
             udp = (struct udphdr*)((unsigned char*)ip + (ip->ihl * 4));
             data_len = ntohs(udp->len) - sizeof(struct udphdr);
             user_data_ptr = (unsigned char *)(skb->data + sizeof(struct iphdr)  + sizeof(struct udphdr)) + data_shift;
             memcpy(data, user_data_ptr, data_len);
             data[data_len] = '\0';
 	    
-	    printk("Captured UDP datagram.\n");
-	    printk("saddr: %d.%d.%d.%d\n",
-                ntohl(ip->saddr) >> 24, (ntohl(ip->saddr) >> 16) & 0x00FF,
-                (ntohl(ip->saddr) >> 8) & 0x0000FF, (ntohl(ip->saddr)) & 0x000000FF);
-            printk("daddr: %d.%d.%d.%d\n",
-                ntohl(ip->daddr) >> 24, (ntohl(ip->daddr) >> 16) & 0x00FF,
-                (ntohl(ip->daddr) >> 8) & 0x0000FF, (ntohl(ip->daddr)) & 0x000000FF);
+	    //printk("Captured UDP datagram.\n");
+	    //printk("saddr: %d.%d.%d.%d\n",
+            //    ntohl(ip->saddr) >> 24, (ntohl(ip->saddr) >> 16) & 0x00FF,
+            //    (ntohl(ip->saddr) >> 8) & 0x0000FF, (ntohl(ip->saddr)) & 0x000000FF);
+            //printk("daddr: %d.%d.%d.%d\n",
+            //    ntohl(ip->daddr) >> 24, (ntohl(ip->daddr) >> 16) & 0x00FF,
+            //   (ntohl(ip->daddr) >> 8) & 0x0000FF, (ntohl(ip->daddr)) & 0x000000FF);
 
-    	    printk(KERN_INFO "Data length: %d.\n", data_len);
-            printk("Data: %s\n", data);
+    	    //printk(KERN_INFO "Data length: %d.\n", data_len);
+            //printk("Data: %s\n", data);
             if (data_len < 70) {
-                printk("Count!");
-                return 1;
-            }
+	    	    printk("Captured UDP datagram.\n");
+		    printk(KERN_INFO "Data length: %d.\n", data_len);
+		    return 1;
+	    }
+            else stats.rx_dropped++;
     }
     return 0;
 }
@@ -60,9 +62,7 @@ static rx_handler_result_t handle_frame(struct sk_buff **pskb) {
         if (check_frame(*pskb, 0)) {
             stats.rx_packets++;
             stats.rx_bytes += (*pskb)->len;
-        } else {
-	    stats.rx_dropped++;
-	}
+        }
         (*pskb)->dev = child;
         return RX_HANDLER_ANOTHER;
 } 
@@ -85,6 +85,8 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev) {
     if (check_frame(skb, 14)) {
         stats.tx_packets++;
         stats.tx_bytes += skb->len;
+    } else {
+    	stats.tx_dropped++;
     }
 
     if (priv->parent) {
@@ -111,8 +113,10 @@ static ssize_t proc_read(struct file *file, char __user *ubuf, size_t count, lof
     char str[128];
     
     int len = sprintf(str, 
-	"rx_packets : %lu\n" "rx_dropped : %lu\n" "rx_bytes   : %lu\n",
-	stats.rx_packets, stats.rx_dropped, stats.rx_bytes);
+	"rx_packets : %lu\n" "rx_dropped : %lu\n" "rx_bytes   : %lu\n"
+	"tx_packets : %lu\n" "tx_dropped : %lu\n" "tx_bytes   : %lu\n",
+	stats.rx_packets, stats.rx_dropped, stats.rx_bytes,
+	stats.tx_packets, stats.tx_dropped, stats.tx_bytes);
 	
     if (*ppos > 0 || count < len)
     	return 0;
