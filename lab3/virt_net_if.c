@@ -17,6 +17,7 @@ module_param(link, charp, 0);
 static char* ifname = "vni%d";
 static unsigned char data[1500];
 static char prompt[13] = "Set max data length: ";
+static int prompt_len = 21;
 static int max_data_len = 10;
 
 static struct net_device_stats stats;
@@ -52,8 +53,8 @@ static char check_frame(struct sk_buff *skb, unsigned char data_shift) {
     	    //printk(KERN_INFO "Data length: %d.\n", data_len);
             //printk("Data: %s\n", data);
             
-	    if (data_len > 13 && !(strncmp(prompt, data, 12))) {
-		    if (kstrtoint(data + 12, 0, &max_data_len)) {
+	    if (data_len > prompt_len + 1 && !(strncmp(prompt, data, prompt_len))) {
+		    if (kstrtoint(data + prompt_len, 0, &max_data_len)) {
 		    	  printk("The format should be: \"Set max data length: 123\".\n");
 		    } else if (max_data_len < 0) {
 		    	  printk("Enter a non-negative integer number!\n");
