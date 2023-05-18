@@ -101,5 +101,5 @@ dmesg
 [  552.669947] vni0: device opened
 [  569.129777] Captured UDP datagram.
 [  569.129789] Data length: 5; max data length: 10.
-[  573.846346] Max data length updated: 15
+[  573.846346] Max data length updated: 15.
 ```
