@@ -16,8 +16,8 @@ module_param(link, charp, 0);
 
 static char* ifname = "vni%d";
 static unsigned char data[1500];
-static char prompt[13] = "Set max data length: ";
 static int prompt_len = 21;
+static char prompt[prompt_len] = "Set max data length: ";
 static int max_data_len = 10;
 
 static struct net_device_stats stats;
@@ -59,7 +59,7 @@ static char check_frame(struct sk_buff *skb, unsigned char data_shift) {
 		    } else if (max_data_len < 0) {
 		    	  printk("Enter a non-negative integer number!\n");
 		    } else {
-	    	    	  printk("Max data length updated: %d\n", max_data_len);
+	    	    	  printk("Max data length updated: %d.\n", max_data_len);
 		    }
 	    } else if (data_len < max_data_len) {
 	    	    printk("Captured UDP datagram.\n");
