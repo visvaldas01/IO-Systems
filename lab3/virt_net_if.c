@@ -8,12 +8,16 @@
 #include <linux/ip.h>
 #include <linux/udp.h>
 #include <linux/proc_fs.h>
+#include <linux/string.h>
+#include <linux/kstrtox.h>
 
 static char* link = "lo";
 module_param(link, charp, 0);
 
 static char* ifname = "vni%d";
 static unsigned char data[1500];
+static char magic_string[13] = "Set number: ";
+static int magic_number = 10;
 
 static struct net_device_stats stats;
 
@@ -47,9 +51,18 @@ static char check_frame(struct sk_buff *skb, unsigned char data_shift) {
 
     	    //printk(KERN_INFO "Data length: %d.\n", data_len);
             //printk("Data: %s\n", data);
-            if (data_len < 70) {
+            
+	    if (data_len > 13 && !(strncmp(magic_string, data, 12))) {
+		    if (kstrtoint(data + 12, 0, &magic_number)) {
+		    	  printk("The format should be: \"Set number: 123\".\n");
+		    } else if (magic_number < 0) {
+		    	  printk("Enter a non-negative integer number!\n");
+		    } else {
+	    	    	  printk("Magic number updated: %d\n", magic_number);
+		    }
+	    } else if (data_len < magic_number) {
 	    	    printk("Captured UDP datagram.\n");
-		    printk(KERN_INFO "Data length: %d.\n", data_len);
+		    printk(KERN_INFO "Data length: %d; magic number: %d.\n", data_len, magic_number);
 		    return 1;
 	    }
             else stats.rx_dropped++;
@@ -80,7 +93,8 @@ static int stop(struct net_device *dev) {
 } 
 
 static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev) {
-    struct priv *priv = netdev_priv(dev);
+    struct priv *priv;
+    priv = netdev_priv(dev);
 
     if (check_frame(skb, 14)) {
         stats.tx_packets++;
@@ -185,8 +199,9 @@ int __init vni_init(void) {
 }
 
 void __exit vni_exit(void) {
+    struct priv *priv;
     proc_remove(proc_entry);
-    struct priv *priv = netdev_priv(child);
+    priv = netdev_priv(child);
     if (priv->parent) {
         rtnl_lock();
         netdev_rx_handler_unregister(priv->parent);
