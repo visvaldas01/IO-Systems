@@ -16,8 +16,8 @@ module_param(link, charp, 0);
 
 static char* ifname = "vni%d";
 static unsigned char data[1500];
-static char magic_string[13] = "Set number: ";
-static int magic_number = 10;
+static char prompt[13] = "Set max data length: ";
+static int max_data_len = 10;
 
 static struct net_device_stats stats;
 
@@ -52,17 +52,17 @@ static char check_frame(struct sk_buff *skb, unsigned char data_shift) {
     	    //printk(KERN_INFO "Data length: %d.\n", data_len);
             //printk("Data: %s\n", data);
             
-	    if (data_len > 13 && !(strncmp(magic_string, data, 12))) {
-		    if (kstrtoint(data + 12, 0, &magic_number)) {
-		    	  printk("The format should be: \"Set number: 123\".\n");
-		    } else if (magic_number < 0) {
+	    if (data_len > 13 && !(strncmp(prompt, data, 12))) {
+		    if (kstrtoint(data + 12, 0, &max_data_len)) {
+		    	  printk("The format should be: \"Set max data length: 123\".\n");
+		    } else if (max_data_len < 0) {
 		    	  printk("Enter a non-negative integer number!\n");
 		    } else {
-	    	    	  printk("Magic number updated: %d\n", magic_number);
+	    	    	  printk("Max data length updated: %d\n", max_data_len);
 		    }
-	    } else if (data_len < magic_number) {
+	    } else if (data_len < max_data_len) {
 	    	    printk("Captured UDP datagram.\n");
-		    printk(KERN_INFO "Data length: %d; magic number: %d.\n", data_len, magic_number);
+		    printk(KERN_INFO "Data length: %d; max data length: %d.\n", data_len, max_data_len);
 		    return 1;
 	    }
             else stats.rx_dropped++;
